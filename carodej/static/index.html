@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hackni čaroděje</title>
+<style>
+:root{
+  --ink:#0e1430; --ink2:#3e4359; --muted:#7c8298; --rule:#d9dce6; --bg:#fff; --soft:#f6f7fb;
+  --blue:#779cd5; --blue-l:#f4f7fc; --blue-ink:#2f5390;
+  --coral:#f7858b; --coral-l:#fff6f6; --coral-ink:#b3363f;
+  --teal:#69dace; --teal-l:#f3fcfb; --teal-ink:#147068;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:Georgia,"Times New Roman",serif;-webkit-text-size-adjust:100%}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.app{max-width:720px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+h1{font-size:26px;margin:0}
+.logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink);font:700 15px Helvetica,Arial,sans-serif;letter-spacing:.02em;white-space:nowrap}
+.levels{display:flex;gap:6px;margin:14px 0 4px;overflow-x:auto;padding-bottom:4px}
+.levels button{flex:none;width:40px;height:40px;border-radius:50%;border:1.5px solid var(--rule);background:#fff;
+  font:600 16px ui-monospace,Menlo,monospace;color:var(--ink);cursor:pointer}
+.levels button.solved{border-color:var(--teal);background:var(--teal-l);color:var(--teal-ink)}
+.levels button.cur{border-color:var(--ink);background:var(--ink);color:#fff}
+.levels button:disabled{color:var(--rule);cursor:default}
+.card{border-top:1px solid var(--rule);margin-top:8px;padding-top:10px}
+.card .k{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.card b{display:block;font-size:22px;margin:2px 0 4px}
+.card .d{font-size:14px;color:var(--ink2)}
+.log{flex:1;min-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:14px 0}
+.msg{max-width:85%;padding:9px 14px;border-radius:12px;font-size:17px;line-height:1.35;white-space:pre-wrap;word-wrap:break-word}
+.msg .who{display:block;font:12px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.me{align-self:flex-end;background:var(--blue-l);border:1px solid var(--blue)}
+.bot{align-self:flex-start;background:var(--soft);border:1px solid var(--rule)}
+.bot.blocked{background:var(--coral-l);border-color:var(--coral)}
+.tag{display:inline-block;margin-top:6px;font:11px ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--coral-ink)}
+.sys{align-self:center;font-size:14px;color:var(--muted);text-align:center}
+.sys.win{color:var(--teal-ink);font-weight:700}
+.sys.err{color:var(--coral-ink)}
+form{display:flex;gap:8px;margin-top:8px}
+input{flex:1;min-width:0;font:17px Georgia,serif;padding:11px 12px;border:1.5px solid var(--rule);border-radius:10px;outline:none;background:#fff;color:var(--ink)}
+input:focus{border-color:var(--blue)}
+button.go{flex:none;font:600 15px ui-monospace,Menlo,monospace;padding:0 16px;border-radius:10px;border:0;background:var(--ink);color:#fff;cursor:pointer}
+button.go:disabled{opacity:.4}
+form.guess input{border-style:dashed}
+form.guess button.go{background:var(--teal-ink)}
+.foot{display:flex;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--muted)}
+.foot a{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><h1>Hackni čaroděje</h1><a class="logo" href="https://deset.ai" target="_blank" aria-label="Deset AI"><svg viewBox="0 0 44 38" width="30" height="26" aria-hidden="true"><circle cx="22.0" cy="4.0" r="3.3" fill="#0e1430"/><circle cx="17.0" cy="13.5" r="3.3" fill="#0e1430"/><circle cx="27.0" cy="13.5" r="3.3" fill="#0e1430"/><circle cx="12.0" cy="23.0" r="3.3" fill="#0e1430"/><circle cx="22.0" cy="23.0" r="3.3" fill="#0e1430"/><circle cx="32.0" cy="23.0" r="3.3" fill="#0e1430"/><circle cx="7.0" cy="32.5" r="3.3" fill="#779cd5"/><circle cx="17.0" cy="32.5" r="3.3" fill="#779cd5"/><circle cx="27.0" cy="32.5" r="3.3" fill="#779cd5"/><circle cx="37.0" cy="32.5" r="3.3" fill="#779cd5"/></svg><span>DESET AI</span></a></header>
+  <div class="levels" id="levels"></div>
+  <div class="card" id="card"></div>
+  <div class="log" id="log"></div>
+  <form id="chat"><input id="msg" placeholder="Napiš čaroději…" maxlength="500" autocomplete="off"><button class="go" id="send">Poslat</button></form>
+  <form id="guess" class="guess"><input id="pw" placeholder="Znáš heslo? Zadej ho sem" autocomplete="off" autocapitalize="characters"><button class="go">Ověřit</button></form>
+  <div class="foot"><span>Každý hráč má vlastní heslo.</span><a href="#" id="clear">Vymazat rozhovor</a></div>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+let S = null, cur = 1;
+const logs = {};
+
+async function api(path, body){
+  const r = await fetch(path, body ? {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body)} : {});
+  const j = await r.json().catch(() => ({error:'Chyba spojení.'}));
+  if (!r.ok && !j.error) j.error = 'Chyba ' + r.status;
+  return j;
+}
+function add(cls, text, who, tag){
+  (logs[cur] = logs[cur] || []).push({cls, text, who, tag});
+  draw();
+}
+function draw(){
+  const L = $('#log'); L.innerHTML = '';
+  (logs[cur] || []).forEach(m => {
+    const d = document.createElement('div'); d.className = m.cls;
+    if (m.who){ const w = document.createElement('span'); w.className = 'who'; w.textContent = m.who; d.appendChild(w); }
+    d.appendChild(document.createTextNode(m.text));
+    if (m.tag){ const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'zasáhl: ' + m.tag; d.appendChild(document.createElement('br')); d.appendChild(t); }
+    L.appendChild(d);
+  });
+  L.scrollTop = L.scrollHeight;
+}
+function render(){
+  const box = $('#levels'); box.innerHTML = '';
+  S.levels.forEach(l => {
+    const b = document.createElement('button');
+    b.textContent = l.n;
+    b.disabled = !l.unlocked;
+    b.className = (l.solved ? 'solved ' : '') + (l.n === cur ? 'cur' : '');
+    b.title = l.name;
+    b.onclick = () => { cur = l.n; render(); draw(); };
+    box.appendChild(b);
+  });
+  const l = S.levels[cur - 1];
+  $('#card').innerHTML = '';
+  const k = document.createElement('span'); k.className = 'k mono'; k.textContent = 'Úroveň ' + l.n + ' z ' + S.total + (l.solved ? ' · vyřešeno' : '');
+  const n = document.createElement('b'); n.textContent = l.name;
+  const d = document.createElement('div'); d.className = 'd'; d.textContent = 'Obrana: ' + l.defenses.join(' · ');
+  $('#card').append(k, n, d);
+  if (!(logs[cur] || []).length) add('sys', 'Čaroděj střeží tajné heslo. Vymámi ho z něj a zadej dole. Čaroděj mluví anglicky, psát mu můžeš česky i anglicky.');
+}
+async function load(){
+  S = await api('/api/state');
+  const open = S.levels.filter(l => l.unlocked).map(l => l.n);
+  if (!open.includes(cur)) cur = Math.max(...open);
+  render(); draw();
+}
+
+$('#chat').onsubmit = async e => {
+  e.preventDefault();
+  const m = $('#msg').value.trim(); if (!m) return;
+  $('#msg').value = ''; $('#send').disabled = true;
+  add('msg me', m, 'Ty');
+  const r = await api('/api/chat', {level:cur, message:m});
+  $('#send').disabled = false; $('#msg').focus();
+  if (r.error) return add('sys err', r.error);
+  add('msg bot' + (r.blocked_by ? ' blocked' : ''), r.reply, 'Čaroděj', r.blocked_by);
+};
+$('#guess').onsubmit = async e => {
+  e.preventDefault();
+  const g = $('#pw').value.trim(); if (!g) return;
+  const r = await api('/api/guess', {level:cur, guess:g});
+  if (r.error) return add('sys err', r.error);
+  if (!r.ok) return add('sys err', '„' + g + '“ to není.');
+  $('#pw').value = '';
+  if (r.won){ add('sys win', 'Porazil jsi Arcimága! Jsi mistr prompt injection.'); await load(); return; }
+  add('sys win', 'Správně!');
+  await load(); cur = Math.min(cur + 1, S.total); render();
+  add('sys win', 'Úroveň ' + cur + ' odemčena. Tady už to bude těžší.');
+};
+$('#clear').onclick = async e => {
+  e.preventDefault();
+  await api('/api/reset', {level:cur, guess:''});
+  logs[cur] = []; render(); draw();
+};
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+.DS_Store
+**/.DS_Store
+
+# build output from prezentace/build.py
+hackni-chatbota.html
+
+__pycache__/
+*.pyc
