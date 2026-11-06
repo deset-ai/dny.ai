@@ -27,7 +27,7 @@ build.py       ← packs everything into one file, hackni-chatbota.html
 **New content slide.** Copy an existing `<section>` and change the texts:
 
 ```html
-<section data-section="1">            <!-- 0 intro/outro, 1 Útoky (blue), 2 Obrana (coral), 3 Omnibus (teal) -->
+<section data-section="1">            <!-- 0 intro/outro, 1 Útoky (blue), 2 Obrana (coral), 3 Regulace (teal) -->
   <div class="frame">
     <div class="kicker">01 · Útoky</div>
     <h2>Title of the slide</h2>

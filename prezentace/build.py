@@ -9,5 +9,11 @@ t = t.replace('<link rel="stylesheet" href="lib/reveal.css">', "<style>" + (R/"l
 for f in ["reveal.js", "notes.js", "qrcode.js"]:
     js = (R/"lib"/f).read_text(encoding="utf-8").replace("</script", "<\\/script")
     t = t.replace(f'<script src="lib/{f}"></script>', "<script>" + js + "</script>")
+def _img(m):
+    f = R/m.group(1)
+    if not f.exists(): return m.group(0)
+    mt = {"png":"image/png","jpg":"image/jpeg","jpeg":"image/jpeg","webp":"image/webp","gif":"image/gif","svg":"image/svg+xml"}.get(f.suffix[1:].lower(),"application/octet-stream")
+    return 'src="data:' + mt + ';base64,' + base64.b64encode(f.read_bytes()).decode() + '"'
+t = re.sub(r'src="(img/[^"]+)"', _img, t)
 (R/"hackni-chatbota.html").write_text(t, encoding="utf-8")
 print("Hotovo: hackni-chatbota.html")
